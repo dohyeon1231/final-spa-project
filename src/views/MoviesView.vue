@@ -1,12 +1,17 @@
+<script>
+export default { name: 'MoviesView' }
+</script>
+
 <script setup>
 import { onMounted } from "vue";
 import { useMovieStore } from "../stores/movieStore";
 
 const store = useMovieStore();
 
-
 onMounted(() => {
   store.fetchMovies();
+  
+  document.title = "🍿 국내 극장 화제작 (인기순)";
 });
 </script>
 
@@ -16,6 +21,7 @@ onMounted(() => {
       <h1>🍿 국내 극장 화제작 (인기순)</h1>
       <p class="sub-title">2025년 이후 국내 정식 개봉한 실시간 인기 상영작</p>
     </div>
+
     <div v-if="store.isLoading" class="status-message loading">
       ⏳ 실시간 국내 개봉작 데이터를 싣고 오는 중입니다...
     </div>
@@ -25,7 +31,12 @@ onMounted(() => {
     </div>
 
     <div v-else class="movie-list">
-      <div v-for="movie in store.movies" :key="movie.id" class="movie-card">
+      
+      <div
+        v-for="movie in store.movies"
+        :key="movie.id"
+        class="movie-card"
+      >
         <img
           v-if="movie.poster_path"
           :src="`https://image.tmdb.org/t/p/w500${movie.poster_path}`"
@@ -54,6 +65,11 @@ onMounted(() => {
             {{ movie.isFavorite ? "❤️ 찜 해제" : "🤍 찜하기" }}
           </button>
         </div>
+        <RouterLink
+          :to="`/movies/${movie.id}`"
+          class="stretched-link"
+          :aria-label="`${movie.title} 상세 정보 보기`"
+        />
       </div>
     </div>
   </main>
@@ -90,13 +106,15 @@ onMounted(() => {
   color: #e74c3c;
   background-color: #fdeaea;
 }
-
 .movie-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 30px;
 }
+
+
 .movie-card {
+  position: relative;
   border-radius: 12px;
   overflow: hidden;
   background: white;
@@ -158,7 +176,11 @@ onMounted(() => {
   margin-bottom: 20px;
   flex-grow: 1;
 }
+
+
 .fav-btn {
+  position: relative;
+  z-index: 2;
   width: 100%;
   padding: 12px;
   cursor: pointer;
@@ -174,5 +196,15 @@ onMounted(() => {
 .fav-btn.active {
   background: #ff4757;
   color: white;
+}
+
+
+.stretched-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
 }
 </style>

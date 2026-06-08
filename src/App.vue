@@ -1,29 +1,21 @@
 <script setup>
 import { computed } from "vue";
 import { RouterLink, RouterView } from "vue-router";
-// 전역 비동기 세션 데이터가 들어있는 스토어를 임포트합니다.
 import { useMovieStore } from "./stores/movieStore";
 
 const store = useMovieStore();
-
 
 const totalFavoritesCount = computed(() => {
   return store.favorites.length;
 });
 
-
 const averageFavoritesRating = computed(() => {
-  
   if (store.favorites.length === 0) {
     return "0.0";
   }
-
-  
   const totalRatingSum = store.favorites.reduce((accumulator, movie) => {
     return accumulator + movie.vote_average;
   }, 0);
-
-  
   const calculatedAverage = totalRatingSum / store.favorites.length;
   return calculatedAverage.toFixed(1);
 });
@@ -54,7 +46,12 @@ const averageFavoritesRating = computed(() => {
       </div>
     </header>
     <main class="main-content">
-      <RouterView />
+      
+      <RouterView v-slot="{ Component }">
+        <KeepAlive include="MoviesView">
+          <component :is="Component" />
+        </KeepAlive>
+      </RouterView>
     </main>
   </div>
 </template>
