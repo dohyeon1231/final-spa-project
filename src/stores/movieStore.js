@@ -1,15 +1,30 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import axios from "axios";
 
 export const useMovieStore = defineStore("movie", () => {
   const movies = ref([]);
-  const favorites = ref(JSON.parse(sessionStorage.getItem("favorites")) || []);
+  const favorites = ref(JSON.parse(localStorage.getItem("favorites")) || []);
   const isLoading = ref(false);
   const errorMessage = ref("");
 
   
   const selectedMovie = ref(null);
+
+  const sortType = ref('popularity');
+  const currentPage = ref(1);
+  const ITEMS_PER_PAGE = 5;
+
+  const toastMessage = ref('');
+  const toastVisible = ref(false);
+  let toastTimer = null;
+
+  const showToast = (message) => {
+    toastMessage.value = message;
+    toastVisible.value = true;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastVisible.value = false; }, 1800);
+  };
 
   const fetchMovies = async () => {
     isLoading.value = true;
@@ -88,11 +103,51 @@ export const useMovieStore = defineStore("movie", () => {
 
       if (movie.isFavorite) {
         favorites.value.push(movie);
+        showToast('❤️ 찜 목록에 추가됐습니다!');
       } else {
         favorites.value = favorites.value.filter((m) => m.id !== movieId);
+        showToast('🤍 찜 목록에서 제거됐습니다');
       }
-      sessionStorage.setItem("favorites", JSON.stringify(favorites.value));
+      localStorage.setItem("favorites", JSON.stringify(favorites.value));
     }
+  };
+
+  const removeFromFavorites = (movieId) => {
+    favorites.value = favorites.value.filter((m) => m.id !== movieId);
+    const movie = movies.value.find((m) => m.id === movieId);
+    if (movie) movie.isFavorite = false;
+    localStorage.setItem("favorites", JSON.stringify(favorites.value));
+    showToast('🤍 찜 목록에서 제거됐습니다');
+  };
+
+  const sortedMovies = computed(() => {
+    const list = [...movies.value];
+    if (sortType.value === 'title') {
+      list.sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+    } else if (sortType.value === 'date') {
+      list.sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
+    } else if (sortType.value === 'rating') {
+      list.sort((a, b) => b.vote_average - a.vote_average);
+    }
+    return list;
+  });
+
+  const totalPages = computed(() =>
+    Math.ceil(sortedMovies.value.length / ITEMS_PER_PAGE)
+  );
+
+  const paginatedMovies = computed(() => {
+    const start = (currentPage.value - 1) * ITEMS_PER_PAGE;
+    return sortedMovies.value.slice(start, start + ITEMS_PER_PAGE);
+  });
+
+  const setSortType = (type) => {
+    sortType.value = type;
+    currentPage.value = 1;
+  };
+
+  const setPage = (page) => {
+    currentPage.value = page;
   };
 
   return {
@@ -102,7 +157,17 @@ export const useMovieStore = defineStore("movie", () => {
     errorMessage,
     fetchMovies,
     toggleFavorite,
+    removeFromFavorites,
     selectedMovie,
     fetchMovieDetail,
+    sortType,
+    currentPage,
+    totalPages,
+    sortedMovies,
+    paginatedMovies,
+    setSortType,
+    setPage,
+    toastMessage,
+    toastVisible,
   };
 });
